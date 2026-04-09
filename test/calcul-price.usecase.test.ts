@@ -1,9 +1,11 @@
 import { CalculatePriceUseCase } from "@/calcul-price.usecase";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import type { Discount } from "@/calcul-price.usecase";
+
 class StubReductionGateway {
-	public reduction: { type: string; amount: number } | null = null;
-	getReductionByCode(_code: string): Promise<{ type: string; amount: number } | null> {
+	public reduction: Discount | null = null;
+	getReductionByCode(_code: string): Promise<Discount | null> {
 		return Promise.resolve(this.reduction);
 	}
 }
@@ -53,7 +55,6 @@ describe("CalculatePriceUseCase", () => {
 		expect(result).toBe(90);
 	});
 
-	// Test 5 : réduction fixe
 	test("should apply a fixed discount", async () => {
 		// Given
 		stubReductionGateway.reduction = { type: "FIXED", amount: 30 };
@@ -68,7 +69,6 @@ describe("CalculatePriceUseCase", () => {
 		expect(result).toBe(70);
 	});
 
-	// Test 6 : réduction fixe ne peut pas descendre sous 1€
 	test("should not go below 1€ with a fixed discount", async () => {
 		// Given
 		stubReductionGateway.reduction = { type: "FIXED", amount: 150 };
@@ -81,5 +81,36 @@ describe("CalculatePriceUseCase", () => {
 
 		// Then
 		expect(result).toBe(1);
+	});
+
+	test("should give one free product with BUY_ONE_GET_ONE discount", async () => {
+		// Given
+		stubReductionGateway.reduction = { type: "BUY_ONE_GET_ONE", productType: "TSHIRT" };
+
+		// When
+		const result = await calculatePrice.execute(
+			[{ name: "shirt", type: "TSHIRT", price: 10, quantity: 2 }],
+			"BOGO",
+		);
+
+		// Then
+		expect(result).toBe(10); // 2 achetés → 1 offert → paye 1
+	});
+
+	test("should apply BUY_ONE_GET_ONE only on the targeted product type", async () => {
+		// Given
+		stubReductionGateway.reduction = { type: "BUY_ONE_GET_ONE", productType: "TSHIRT" };
+
+		// When
+		const result = await calculatePrice.execute(
+			[
+				{ name: "shirt", type: "TSHIRT", price: 10, quantity: 2 },
+				{ name: "pull", type: "PULL", price: 20, quantity: 1 },
+			],
+			"BOGO",
+		);
+
+		// Then
+		expect(result).toBe(30); // TSHIRT: paye 1 (10€) + PULL: plein prix (20€)
 	});
 });
