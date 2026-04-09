@@ -39,7 +39,6 @@ describe("CalculatePriceUseCase", () => {
 		expect(result).toBe(30);
 	});
 
-	// Test 4 : réduction en pourcentage
 	test("should apply a percentage discount", async () => {
 		// Given
 		stubReductionGateway.reduction = { type: "PERCENTAGE", amount: 10 };
@@ -52,5 +51,35 @@ describe("CalculatePriceUseCase", () => {
 
 		// Then
 		expect(result).toBe(90);
+	});
+
+	// Test 5 : réduction fixe
+	test("should apply a fixed discount", async () => {
+		// Given
+		stubReductionGateway.reduction = { type: "FIXED", amount: 30 };
+
+		// When
+		const result = await calculatePrice.execute(
+			[{ name: "shirt", type: "TSHIRT", price: 100, quantity: 1 }],
+			"PROMO30",
+		);
+
+		// Then
+		expect(result).toBe(70);
+	});
+
+	// Test 6 : réduction fixe ne peut pas descendre sous 1€
+	test("should not go below 1€ with a fixed discount", async () => {
+		// Given
+		stubReductionGateway.reduction = { type: "FIXED", amount: 150 };
+
+		// When
+		const result = await calculatePrice.execute(
+			[{ name: "shirt", type: "TSHIRT", price: 100, quantity: 1 }],
+			"PROMO150",
+		);
+
+		// Then
+		expect(result).toBe(1);
 	});
 });
