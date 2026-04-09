@@ -21,10 +21,27 @@ export interface ReductionGateway {
 //   execute(products) → somme des (price * quantity) pour chaque produit
 // }
 
-export class CalculatePriceUseCase {
-	constructor(private _reductionGateway: ReductionGateway) {}
+// Test 4 : implémentation pour faire passer le test au vert
+// Use case : CalculatePriceUseCase {
+//   execute(products, code) → récupère la réduction via le gateway
+//                           → si PERCENTAGE, applique le % sur le total
+// }
 
-	async execute(products: Product[], _code?: string): Promise<number> {
-		return products.reduce((total, p) => total + p.price * p.quantity, 0);
+export class CalculatePriceUseCase {
+	constructor(private reductionGateway: ReductionGateway) {}
+
+	async execute(products: Product[], code?: string): Promise<number> {
+		const total = products.reduce((sum, p) => sum + p.price * p.quantity, 0);
+
+		if (!code) return total;
+
+		const discount = await this.reductionGateway.getReductionByCode(code);
+		if (!discount) return total;
+
+		if (discount.type === "PERCENTAGE") {
+			return total * (1 - discount.amount / 100);
+		}
+
+		return total;
 	}
 }

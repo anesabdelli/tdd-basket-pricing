@@ -38,4 +38,19 @@ describe("CalculatePriceUseCase", () => {
 		]);
 		expect(result).toBe(30);
 	});
+
+	// Test 4 : réduction en pourcentage
+	test("should apply a percentage discount", async () => {
+		// Given
+		stubReductionGateway.reduction = { type: "PERCENTAGE", amount: 10 };
+
+		// When
+		const result = await calculatePrice.execute(
+			[{ name: "shirt", type: "TSHIRT", price: 100, quantity: 1 }],
+			"PROMO10",
+		);
+
+		// Then
+		expect(result).toBe(90);
+	});
 });
