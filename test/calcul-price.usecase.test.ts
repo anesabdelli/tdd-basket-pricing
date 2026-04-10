@@ -18,15 +18,25 @@ class StubDateProvider {
 	}
 }
 
+// Spy : enregistre les appels pour vérifier que la notification a bien été envoyée
+class SpyNotificationService {
+	public notifiedPrices: number[] = [];
+	async notifyFinalPrice(price: number): Promise<void> {
+		this.notifiedPrices.push(price);
+	}
+}
+
 describe("CalculatePriceUseCase", () => {
 	let stubReductionGateway: StubReductionGateway;
 	let stubDateProvider: StubDateProvider;
+	let spyNotificationService: SpyNotificationService;
 	let calculatePrice: CalculatePriceUseCase;
 
 	beforeEach(() => {
 		stubReductionGateway = new StubReductionGateway();
 		stubDateProvider = new StubDateProvider();
-		calculatePrice = new CalculatePriceUseCase(stubReductionGateway, stubDateProvider);
+		spyNotificationService = new SpyNotificationService();
+		calculatePrice = new CalculatePriceUseCase(stubReductionGateway, stubDateProvider, spyNotificationService);
 	});
 
 	test("should return the price of one product", async () => {
@@ -211,5 +221,20 @@ describe("CalculatePriceUseCase", () => {
 
 		// Then
 		expect(result).toBe(45); // 100 -10% = 90, puis BF 50% = 45
+	});
+
+	test("should notify the final price after calculation", async () => {
+		// Given
+		stubReductionGateway.reductions.set("PROMO10", { type: "PERCENTAGE", amount: 10 });
+
+		// When
+		await calculatePrice.execute(
+			[{ name: "shirt", type: "TSHIRT", price: 100, quantity: 1 }],
+			["PROMO10"],
+		);
+
+		// Then
+		expect(spyNotificationService.notifiedPrices).toHaveLength(1);
+		expect(spyNotificationService.notifiedPrices[0]).toBe(90);
 	});
 });

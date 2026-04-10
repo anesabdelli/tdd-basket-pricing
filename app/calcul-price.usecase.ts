@@ -22,6 +22,10 @@ export interface DateProvider {
 	now(): Date;
 }
 
+export interface NotificationService {
+	notifyFinalPrice(price: number): Promise<void>;
+}
+
 // NOTE: commentaires crées par moi pas d'IA (pour comprendre au fur et à mésure)
 
 // Test 1 & 2 & 3 : implémentation pour faire passer le test au vert
@@ -58,6 +62,11 @@ export interface DateProvider {
 //   + BLACK_FRIDAY : 50% uniquement du 2025-11-28 au 2025-12-01, minimum 1€, cumulable
 // }
 
+// Test 15 : implémentation pour faire passer le test au vert
+// Use case : CalculatePriceUseCase {
+//   + après le calcul, appelle notificationService.notifyFinalPrice(total)
+// }
+
 const BLACK_FRIDAY_START = new Date("2025-11-28T00:00:00");
 const BLACK_FRIDAY_END = new Date("2025-12-01T23:59:59");
 
@@ -65,6 +74,7 @@ export class CalculatePriceUseCase {
 	constructor(
 		private reductionGateway: ReductionGateway,
 		private dateProvider: DateProvider,
+		private notificationService: NotificationService,
 	) {}
 
 	async execute(products: Product[], codes: string[] = []): Promise<number> {
@@ -100,6 +110,8 @@ export class CalculatePriceUseCase {
 		if (blackFridayDiscounts.length > 0 && this.isBlackFridayPeriod()) {
 			total = Math.max(1, total * 0.5);
 		}
+
+		await this.notificationService.notifyFinalPrice(total);
 
 		return total;
 	}
