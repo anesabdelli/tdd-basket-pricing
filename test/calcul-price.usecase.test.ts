@@ -94,7 +94,7 @@ describe("CalculatePriceUseCase", () => {
 		);
 
 		// Then
-		expect(result).toBe(10); // 2 achetés → 1 offert → paye 1
+		expect(result).toBe(10);
 	});
 
 	test("should apply BUY_ONE_GET_ONE only on the targeted product type", async () => {
@@ -111,6 +111,34 @@ describe("CalculatePriceUseCase", () => {
 		);
 
 		// Then
-		expect(result).toBe(30); // TSHIRT: paye 1 (10€) + PULL: plein prix (20€)
+		expect(result).toBe(30);
+	});
+
+	test("should not apply discount if cart total is below minimum threshold", async () => {
+		// Given
+		stubReductionGateway.reduction = { type: "PERCENTAGE", amount: 10, minAmount: 50 };
+
+		// When
+		const result = await calculatePrice.execute(
+			[{ name: "shirt", type: "TSHIRT", price: 30, quantity: 1 }],
+			"PROMO10",
+		);
+
+		// Then
+		expect(result).toBe(30); 
+	});
+
+	test("should apply discount if cart total meets the minimum threshold", async () => {
+		// Given
+		stubReductionGateway.reduction = { type: "PERCENTAGE", amount: 10, minAmount: 50 };
+
+		// When
+		const result = await calculatePrice.execute(
+			[{ name: "shirt", type: "TSHIRT", price: 60, quantity: 1 }],
+			"PROMO10",
+		);
+
+		// Then
+		expect(result).toBe(54);
 	});
 });

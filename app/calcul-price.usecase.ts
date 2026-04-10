@@ -11,6 +11,7 @@ export type Discount = {
 	type: string;
 	amount?: number;
 	productType?: ProductsType;
+	minAmount?: number;
 };
 
 export interface ReductionGateway {
@@ -41,6 +42,11 @@ export interface ReductionGateway {
 //   + si BUY_ONE_GET_ONE, pour chaque paire de produits du type ciblé, un est offert
 // }
 
+// Test 9 & 10 : implémentation pour faire passer les tests au vert
+// Use case : CalculatePriceUseCase {
+//   + si minAmount défini et total < minAmount → pas de réduction
+// }
+
 export class CalculatePriceUseCase {
 	constructor(private reductionGateway: ReductionGateway) {}
 
@@ -54,18 +60,20 @@ export class CalculatePriceUseCase {
 			return products.reduce((sum, p) => sum + p.price * p.quantity, 0);
 		}
 
-		if (discount.type === "BUY_ONE_GET_ONE" && discount.productType) {
-			const total = products.reduce((sum, p) => {
-				if (p.type === discount.productType) {
-					const paidQuantity = Math.ceil(p.quantity / 2);
-					return sum + p.price * paidQuantity;
-				}
-				return sum + p.price * p.quantity;
-			}, 0);
+		const total = products.reduce((sum, p) => sum + p.price * p.quantity, 0);
+
+		if (discount.minAmount !== undefined && total < discount.minAmount) {
 			return total;
 		}
 
-		const total = products.reduce((sum, p) => sum + p.price * p.quantity, 0);
+		if (discount.type === "BUY_ONE_GET_ONE" && discount.productType) {
+			return products.reduce((sum, p) => {
+				if (p.type === discount.productType) {
+					return sum + p.price * Math.ceil(p.quantity / 2);
+				}
+				return sum + p.price * p.quantity;
+			}, 0);
+		}
 
 		if (discount.type === "PERCENTAGE" && discount.amount !== undefined) {
 			return total * (1 - discount.amount / 100);
