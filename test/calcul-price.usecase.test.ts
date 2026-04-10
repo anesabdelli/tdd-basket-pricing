@@ -220,7 +220,7 @@ describe("CalculatePriceUseCase", () => {
 		);
 
 		// Then
-		expect(result).toBe(45); // 100 -10% = 90, puis BF 50% = 45
+		expect(result).toBe(45); // 100 -10% = 90, et apres BF 50% = 45
 	});
 
 	test("should notify the final price after calculation", async () => {
